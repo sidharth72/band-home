@@ -1,0 +1,107 @@
+{% extends "venue/venue_list.html" %}
+
+<div class="breadcrumb-container">
+	{% block breadcrumbs %}
+	{{ block.super }}
+	<span class="breadcrumbs"><a href="{% url 'venue:detail' venue.slug %}">{{ venue.name }}</a></span>
+	{% endblock %}
+</div>
+
+{% block title %}{{ venue.name }} - Venue - Band Booking{% endblock %}
+{% block content %}
+<h1 class="title">{{ venue.name }} <small>venue</small></h1>
+<table class="table table-style inline-table no-wrap">
+	<tr class="row">
+		<th class="cell">Crowd capacity</th>
+		<td class="cell">{{ venue.crowd_capacity }} people</td>
+	</tr>
+	<tr class="row">
+		<th class="cell">Stage width</th>
+		<td class="cell">{{ venue.stage_width }}m</td>
+	</tr>
+	<tr class="row">
+		<th class="cell">Stage depth</th>
+		<td class="cell">{{ venue.stage_depth }}m</td>
+	</tr>
+	<tr class="row">
+		<th class="cell">Stage height</th>
+		<td class="cell">{{ venue.stage_height }}m</td>
+	</tr>
+</table>
+<h2 class="title">Bookings</h2>
+
+<form class="search-form">
+	<select name="genre" class="select-genre" id="select-genre">
+			<option value="alle">All</option>
+		{% for genre in venue.get_genres %}
+			<option value="{{ genre }}">{{ genre }}</option>
+		{% endfor %}
+	</select>
+	<input type="text" id="venue-search" placeholder="Search for band..." />
+</form>
+
+
+<div class="table table-style" id="booking-table">
+	<div class="rowheader">
+		<div class="cell">Band</div>
+		<div class="cell">Date</div>
+		<div class="cell">Attended</div>
+		<div class="cell">Income</div>
+	</div>
+
+	{% for booking in venue.get_bookings %}
+	<a href="{% url 'booking:detail' booking.id %}"
+		class="row"
+		data-genres="{{ booking.band.get_all_genres }}"
+		data-venue="{{ booking.band.name }}">
+		<div class="cell" data-col="Band">{{ booking.band.name }}</div>
+		<div class="cell" data-col="Date">{{ booking.begin|date:"d M Y" }}</div>
+		<div class="cell" data-col="Sum_tickets">{{ booking.report.sum_tickets }}</div>
+		<div class="cell" data-col="Sum">{{ booking.report.sum}}</div>
+	</a>
+	{% endfor %}
+</div>
+
+<script>
+	/**
+	 * Filter genres based on one genre dropdown.
+	 */
+	var _genre = document.querySelector('#select-genre')
+	if (document.querySelector('#booking-table > .row')) {
+		var _display = document.querySelector('#booking-table > .row').style.display
+		_genre.addEventListener('change', function (evt) {
+			var _table = document.querySelectorAll('#booking-table > .row')
+			var _self = this
+			_table.forEach(function (el) {
+				var _test = new RegExp(_self.value).test(el.dataset.genres)
+				if (_self.value === 'alle')
+					el.style.display = _display
+				else
+					el.style.display = _test ? _display : 'none'
+			})
+		})
+
+		/**
+		 * Filter venue based on search.
+		 */
+		var _search = document.querySelector('#venue-search')
+		_search.addEventListener('keyup', function (evt) {
+			var _table = document.querySelectorAll('#booking-table > .row')
+			var _self = this
+			_table.forEach(function (el) {
+				var _test = new RegExp(_self.value, "i").test(el.dataset.venue)
+				if (!_self.value.length)
+					el.style.display = _display
+				else
+					el.style.display = _test ? _display : 'none'
+			})
+		})
+	}
+	var _form = document.querySelector('form.search-form');
+	_form.addEventListener('submit', function(evt) {
+		evt.preventDefault();
+		return false;
+	});
+</script>
+
+{% endblock %}

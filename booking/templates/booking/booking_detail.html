@@ -1,0 +1,359 @@
+{% extends "booking/booking_list.html" %}
+
+<div class="breadcrumb-container">
+	{% block breadcrumbs %}
+		{{ block.super }}
+		<span class="breadcrumbs"><a href="{% url 'booking:detail' booking.id  %}">{{ booking }}</a></span>
+	{% endblock %}
+</div>
+
+{% block title %}{{ booking }} - Booking - Band Booking{% endblock %}
+{% block content %}
+<h1 class="title">{{ booking }} <small>booking</small></h1>
+<div class="controls">
+	{% if perms.booking.change_booking and booking.state != 'm' %}
+	<a href="{% url 'booking:change' booking.id %}" class="button"><i class="fa fa-refresh"></i> Change</a>
+	{% endif %}
+	{% if perms.booking.change_report %}
+		{% if booking.report_ready %}
+			{% if booking.report %}
+				<a href="{% url 'booking:report_edit' booking.id %}" class="button">Edit report</a>
+			{% else %}
+				<a href="{% url 'booking:report_edit' booking.id %}" class="button">Create report</a>
+			{% endif %}
+		{% else %}
+			<a class="button" disabled>Create report</a>
+		{% endif %}
+	{% endif %}
+</div>
+
+<div class="content-below-change">
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Booking Details</div>
+	</div>
+	<table class="booking-table">
+
+	<tr>
+		<th>From:</th>
+		<td>{{ booking.begin|date:'d M Y, H:i' }}</td>
+	</tr>
+	<tr>
+		<th>To:</th>
+		<td>{{ booking.end|date:'d M Y, H:i' }}</td>
+	</tr>
+	<tr>
+		<th>Band fee:</th>
+		<td>{{ booking.band_fee }}kr</td>
+	</tr>
+	<tr>
+		<th>Ticket price member:</th>
+		<td>{{ booking.ticket_price_member }}kr</td>
+	</tr>
+	<tr>
+		<th>Ticket price non-member:</th>
+		<td>{{ booking.ticket_price_non_member }}kr</td>
+	</tr>
+	<tr>
+		<th>Registered by:</th>
+		<td>{{ booking.user.get_full_name|default:booking.user.username }}</td>
+	</tr>
+	<tr>
+		<th>Registered:</th>
+		<td>{{ booking.created|date:'d M Y, H:i'  }}</td>
+	</tr>
+	<tr>
+		<th>Last modified:</th>
+		<td>{{ booking.modified|date:'d M Y, H:i'  }}</td>
+	</tr>
+	{% if booking.replaces %}
+	<tr>
+		<th>Replaces:</th>
+		<td><a href="{% url 'booking:detail' booking.replaces.id %}">{{ booking.replaces }}</a> ({{ booking.replaces.get_state_display }})</td>
+	</tr>
+	{% endif %}
+	<tr>
+		<th>State:</th>
+		<td>{{ booking.get_state_display }}</td>
+	</tr>
+</table>
+
+{% if booking.replacements.all %}
+<table class="booking-table">
+
+	<thead>
+		<td><h6>Replaced with:</h6></td>
+		<tr>
+
+			<th>Name</th>
+			<th>Created</th>
+			<th>State</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for replacement in booking.replacements.all %}
+		<tr>
+			<td>
+				<a href="{% url 'booking:detail' replacement.id %}">
+					{{ replacement.band.name }} @ {{ replacement.venue.name }}
+				</a>
+			</td>
+			<td>{{ replacement.created|date:'d M Y, H:i' }}</td>
+			<td>{{ replacement.get_state_display }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+</div>
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Band Details</div>
+	</div>
+
+	<table class="booking-table">
+		<tr>
+			<th>Band:</th>
+			<td><a href="{% url 'band:detail' booking.band.slug %}">{{ booking.band.name }}</a></td>
+		</tr>
+		<tr>
+			<th>Name:</th>
+			<td>{{ booking.band.contact_person }}</td>
+		</tr>
+		<tr>
+			<th>Phone:</th>
+			<td>{{ booking.band.contact_phone }}</td>
+		</tr>
+		<tr>
+			<th>Email:</th>
+			<td><a href="mailto:{{ booking.band.contact_email }}">{{ booking.band.contact_email }}</a></td>
+		</tr>
+
+	</table>
+
+	<div class="button-go-to-band">
+		<a class="button"  href="{% url 'band:detail' booking.band.slug %}">Go to {{ booking.band.name }}</a>
+	</div>
+</div>
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Venue Details</div>
+	</div>
+	<table class="booking-table">
+		<tr>
+			<th>Venue:</th>
+			<td><a href="{% url 'venue:detail' booking.venue.slug %}">{{ booking.venue.name }}</a></td>
+		</tr>
+		<tr>
+			<th>Crowd capacity:</th>
+			<td>{{ booking.venue.crowd_capacity }} people</td>
+		</tr>
+		<tr>
+			<th>Stage width:</th>
+			<td>{{ booking.venue.stage_width }}m</td>
+		</tr>
+		<tr>
+			<th>Stage depth:</th>
+			<td>{{ booking.venue.stage_depth }}m</td>
+		</tr>
+		<tr>
+			<th>Stage height:</th>
+			<td>{{ booking.venue.stage_height }}m</td>
+		</tr>
+	</table>
+		<div class="button-go-to-band">
+		<a class="button" href="{% url 'venue:detail' booking.venue.slug %}">Go to {{ booking.venue.name }}</a>
+	</div>
+
+</div>
+
+{% if booking.report %}
+	<div class="booking-box">
+		<div class="booking-box-header">
+			<div>Booking Report</div>
+		</div>
+		<table class="booking-table">
+			<tr>
+				<th>Members:</th>
+				<td>{{ booking.report.ticket_sold_member }}</td>
+				<td>{{ booking.report.sum_member_tickets }}kr</td>
+			</tr>
+			<tr>
+				<th>Non members:</th>
+				<td>{{ booking.report.ticket_sold_non_member }}</td>
+				<td>{{ booking.report.sum_non_member_tickets }}kr</td>
+			</tr>
+			<tr>
+				<th>Total:</th>
+				<td>{{ booking.report.ticket_total }}</td>
+				<td>{{ booking.report.sum_tickets }}kr</td>
+			</tr>
+			<tr>
+				<th>Band fee:</th>
+				<td></td>
+				<td>-{{ booking.band_fee }}kr</td>
+			</tr>
+			<tr>
+				<th>Total:</th>
+				<td></td>
+				<td>{{ booking.report.sum }}kr</td>
+			</tr>
+			{% if booking.report.additional_information %}
+			<tr>
+				<th>Additional information:</th>
+				<td colspan="2">{{ booking.report.additional_information }}</td>
+			</tr>
+			<tr>
+				<th>Entry</th>
+				<th>Expence</th>
+				<th>Income</th>
+			</tr>
+			<tr>
+				<th>Sum member tickets:</th>
+				<td></td>
+				<td>{{ booking.report.sum_non_member_tickets }}</td>
+			</tr>
+			<tr>
+				<th>Sum non-member tickets:</th>
+				<td></td>
+				<td>{{ booking.report.sum_member_tickets }}</td>
+			</tr>
+			<tr>
+				<th>Sum tickets:</th>
+				<td></td>
+				<td>{{ booking.report.sum_tickets }}</td>
+			</tr>
+			<tr>
+				<th>Band fee:</th>
+				<td>{{ booking.band_fee }}</td>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Total</th>
+				<td>{{ booking.report.sum_expences }}</td>
+				<td>{{ booking.report.sum_income }}</td>
+			</tr>
+			<tr>
+				<th></th>
+				<th></th>
+				<td>{{ booking.report.sum }}</td>
+			</tr>
+
+			{% endif %}
+		</table>
+	</div>
+
+{% endif %}
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Technical Requirements:</div>
+	</div>
+	<table class="booking-table">
+		{% for tech in booking.tech_req.all %}
+		<tr>
+			<th>{{ tech.item }}</th>
+			{% if tech.quantity %}
+				<td>{{ tech.quantity }}</td>
+			{% else %}
+				<td></td>
+			{% endif %}
+		</tr>
+		{% endfor %}
+	</table>
+	<form action="{% url 'booking:techreq_add' booking.id %}" method="POST">
+		{% csrf_token %}
+		<input type="text" name="item"/>
+		<input type="number" name="quantity"/>
+		<input type="submit" value="Legg til" class="submit-button"/>
+	</form>
+</div>
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Booking Status</div>
+	</div>
+	<table class="booking-table">
+		{% if booking.state == ' ' %}
+			<tr><th>Waiting for the booking to be accepted internally</th></tr>
+		{% elif booking.state == 'a' %}
+			<tr><th>Waiting for the offer email to be sent</th></tr>
+		{% elif booking.state == 'e' %}
+			<tr><th>Waiting for the band to accept the offer</th></tr>
+		{% elif booking.state == 'b' and not booking.is_past_due %}
+			<tr><th>The booking is accepted :)</th></tr>
+		{% elif booking.state == 'b' %}
+			<tr><th>The booking is finished :)</th></tr>
+		{% endif %}
+		{% if perms.booking.transition_booking %}
+		{% if booking.state == ' ' and perms.booking.accept_booking or booking.state == 'e' %}
+		<tr>
+			<th>
+				<form class="button-form" method="post" action = "{%url 'booking:transition'  booking.id %}">
+					{% csrf_token %}
+					<button type= "submit" value= "Accept" name= "accept" class="button-accept">
+						<i class="fa fa-check" aria-hidden="true"></i>
+					</button>
+					<button type= "submit" value= "Reject" name= "reject" class="button-reject">
+						<i class="fa fa-times" aria-hidden="true"></i>
+					</button>
+				</form>
+			</th>
+		</tr>
+		{% elif booking.state == 'a' %}
+			<tr>
+				<th>
+					<script language="JavaScript">document.write("<a class='button' href=\"mailto:{{ booking.band.contact_email }}?subject=" + encodeURIComponent("Bookingrequest {{ booking.begin|date:'d M Y, H:i' }} @ {{ booking.venue.name }}" ) +
+						"&body=" + encodeURIComponent("Hey {{ booking.band.name }}!\r\n\r\n Please see the bookingrequest information below.\r\n\r\n Bookingdate: {{ booking.begin|date:'d M Y, H:i' }} to {{ booking.end|date:'d M Y, H:i' }}.\r\n\r\n Your fee will be {{ booking.band_fee }}kr.\r\n\r\nYou will be playing at {{ booking.venue.name }} with a crowd capacity of {{ booking.venue.crowd_capacity }} people.\r\n\r\n Please get back to me if you would like to accept this booking.\r\n\r\n\r\n - {{ booking.user.get_full_name|default:booking.user.username }} @ Samfundet") + "\">Send bookingrequest</a>")</script>
+				</th>
+			</tr>
+			<tr>
+				<th>
+					<form class="button-form-accept" method="post" action = "{%url 'booking:transition'  booking.id %}">
+						{% csrf_token %}
+						<input type="submit" name="send_offer" value="Request sent" class="button"></input>
+
+					</form>
+				</th>
+			</tr>
+		{% endif %}
+		{% endif %}
+	</table>
+</div>
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Shifts</div>
+	</div>
+	<table class="booking-table">
+		{% for shift in booking.shifts.all %}
+		<tr>
+			<td>{{ shift.name }}</td>
+			<td>{{ shift.group.name }}</td>
+			<td>{% if shift.user %}{{ shift.user.get_full_name|default:shift.user.username }}{% else %}-{% endif %}</td>
+		</tr>
+		{% endfor %}
+	</table>
+</div>
+
+<div class="booking-box">
+	<div class="booking-box-header">
+		<div>Events</div>
+	</div>
+	<table class="booking-table">
+		{% for event in booking.events.all %}
+		<tr>
+			<td>{{ event }}</td>
+			<td>{{ event.time }}</td>
+			<td>{{ event.user.get_full_name|default:event.user.username }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+</div>
+
+</div>
+
+{% endblock %}

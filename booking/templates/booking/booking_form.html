@@ -1,0 +1,144 @@
+{% extends "booking/booking_list.html" %}
+
+{% block breadcrumbs %}
+{{ block.super }}
+{% if booking %}
+<span class="breadcrumbs">
+	<a href="{% url 'booking:detail' booking.id %}">{{ booking }}</a>
+</span>
+{% endif %}
+<span class="breadcrumbs">
+	{% if booking %}
+	<a href="{% url 'booking:change' booking.id %}">Edit</a>
+	{% else %}
+	<a href="{% url 'booking:create' %}">Create</a>
+	{% endif %}
+</span>
+{% endblock %}
+
+{% block title %}
+{% if booking %}
+{{ booking }} - Edit
+{% else %}
+Create
+{% endif %}
+ - Booking - Band Booking
+{% endblock %}
+{% block content %}
+<h1>
+	{% if booking %}
+	{{ booking.band.name }} @ {{ booking.venue.name }} <small>edit</small>
+	{% else %}
+	Booking <small>create</small>
+	{% endif %}
+</h1>
+
+<form class="create-form" method="POST">
+	<p>Please enter the booking information below.</p>
+	{% csrf_token %}
+	<table class="create-booking-table">
+		<tr>
+			<td></td>
+			<td style="padding-bottom: 6px">
+				<a class="button"
+					value="Add band"
+					href="{% url 'band:create' %}"
+					target="_blank">Add Band</a>
+			</td>
+		</tr>
+		{{ form.as_table }}
+		<tr>
+			<td></td>
+			<td>
+				<button class="submit-button" type="submit" value="Add">Add</button>
+			</td>
+		</tr>
+	</table>
+</form>
+
+<script>
+const ticket = document.querySelector("input[name=ticket_price_member]")
+const ticketNonMember = document.querySelector("input[name=ticket_price_non_member]")
+const ticketForSale = document.querySelector("input[name=total_tickets_for_sale]")
+const venueGet = document.querySelector("select[name=venue]")
+const bandFee = document.querySelector("input[name=band_fee]")
+const profit = 1.20
+const band = document.querySelector("select[name=band]")
+
+/**
+ * Legger til minstegrense for input verdier.
+ */
+;[
+	bandFee,
+	ticket,
+	ticketNonMember,
+	ticketForSale,
+].forEach(function (element) {
+	if (typeof element.min !== 'undefined') element.min = 0
+})
+
+/**
+ * Kalkulere billett-priser mens man skriver inn.
+ */
+function calculateTicket () {
+	let bandPop
+	let venueValue = venueGet.value
+	let bandID = band.value
+	let bandFeeValue = bandFee.value
+
+	/**
+	* Sjekker om band ID og bandFee er initialisert før vi beregner prisene.
+	*/
+	if (bandID.length && bandFeeValue.length) {
+		getSpotifyDataFromBand(bandID, function (result) {
+			bandPop = result.popularity
+
+			if (!bandPop) bandPop = 10
+			bandPop = bandPop / 10
+
+			fetch("/venue/" + venueValue + "/", {
+				credentials: "same-origin",
+				"headers": {
+					"Accept": "application/json"
+				}
+			})
+			.then(function (p) { return p.json() })
+			.then(function (data) {
+					ticket.value = (
+						Math.ceil(
+							(
+								(
+									(
+										bandFeeValue * (
+											(bandPop / 10) + 1
+										)
+									) / data.object.crowd_capacity
+								) / 10
+							) * profit
+						)
+					) * 10
+					ticketNonMember.value = (
+						Math.ceil(
+							(
+								(
+									(
+										bandFeeValue * (
+											(bandPop / 10) + 1
+										)
+									) / data.object.crowd_capacity
+								) / 10
+							) * profit
+						)
+					) * 10 + 50
+			})
+		})
+	}
+}
+
+/**
+ * Lager en lytter for hvert av elementene som bestemmer prisene.
+ */
+[venueGet, bandFee, band].forEach(function (element) { element.addEventListener('input', calculateTicket) })
+</script>
+
+{% endblock %}

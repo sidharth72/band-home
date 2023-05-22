@@ -1,0 +1,4 @@
+Django==4.2.1
+django-unique-slugify
+pytz==2022.1
+requests==2.26.0

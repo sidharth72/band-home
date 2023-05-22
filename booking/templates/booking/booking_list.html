@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load weeklist %}
+{% load url_replace %}
+{% load keep_get_params %}
+
+<div class="breadcrumb-container">
+	{% block breadcrumbs %}
+	{{ block.super }}
+	<span class="breadcrumbs"><a href="{% url 'booking:list' %}">Bookings</a></span>
+	{% endblock %}
+</div>
+
+{% block title %}Bookings - Band Booking{% endblock %}
+{% block content %}
+<div class="layout-row">
+	<div class="layout-cell corner-spacing">
+		<h1 class="title">Bookings</h1>
+		<div class="controls">
+			{% if perms.booking.add_booking %}
+			<a href="{% url 'booking:create' %}" class="button"><i class="fa fa-plus"></i> Add booking</a>
+			{% endif %}
+			{% if not is_manager %}
+			<a href="?{% url_replace request 'list_type' monthlist|yesno:'week,month' %}" class="button">
+				{{ weeklist|yesno:'Month,Week' }}
+			</a>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% if weeklist %}
+<div class="layout-cell center">
+	<span>
+		<a href="?{% url_replace request 'week' weeklist.week_previous|date:'Y-\WW' %}">Last week</a> |
+		<span>Week {{ weeklist.week|date:'W, Y' }}</span> |
+		<a href="?{% url_replace request 'week' weeklist.week_next|date:'Y-\WW' %}">Next week</a>
+	</span>
+	<div class="weeklist table-style">
+		<div class="rowheader">
+			<div class="cell"></div>
+			{% for e in 0|weekdays:weeklist.week %}
+			<div class="cell">
+				<span class="dayname">{{ e|date:"l" }}</span>
+				<span class="date">{{ e|date:"d.m" }}</span>
+			</div>
+			{% endfor %}
+		</div>
+		{% for venue in weeklist.list|booking_venue_list %}
+		<div class="row-col">
+			<div class="cell">{{ venue.venue }}</div>
+			{% for date in venue.booking_list|booking_weeklist:weeklist.week %}
+			{% if date.accepted %}
+			<a class="cell accepted" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+			</a>
+			{% elif date.offer_accepted %}
+			<a class="cell offer_accepted" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+			</a>
+			{% elif date.offer_sent %}
+			<a class="cell offer_sent" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+			</a>
+			{% elif date.pending %}
+			{% if date.list|length_is:"1" %}
+			{% with booking=date.list|first %}
+			<a class="cell pending" href="{% url 'booking:detail' booking.id %}" title="View booking">
+				{{ booking.band }}
+			</a>
+			{% endwith %}
+			{% else %}
+			<a class="cell pending" href="{% url 'booking:list' %}?date={{ date.date|date:'Y-m-d' }}&venue={{ venue.venue.slug }}" title="View bookings">
+				Multiple bookings
+			</a>
+			{% endif %}
+			{% else %}
+			{% if perms.booking.add_booking %}
+			<a class="cell" href="{% url 'booking:create' %}?date={{ date.date|date:'Y-m-d' }}&venue={{ venue.venue.slug }}" title="Create booking"></a>
+			{% else %}
+			<p class="cell"></p>
+			{% endif %}
+			{% endif %}
+			{% endfor %}
+		</div>
+		{% endfor %}
+	</div>
+</div>
+{% elif monthlist %}
+<div class="layout-cell center">
+	<form action="" method="get">
+		<input type="text" name="monthlist_year" value="{{ monthlist.year }}">
+		<select name="monthlist_month" onchange="this.form.submit()">
+			{% for month in monthlist.months %}
+			<option value="{{ month|date:'n' }}"{% if month|date:'n' == monthlist.month %} selected{% endif %}>{{ month|date:"F" }}</option>
+			{% endfor %}
+		</select>
+		<select name="monthlist_venue" onchange="this.form.submit()">
+			{% for venue in monthlist.venues %}
+			<option value="{{ venue.slug }}"{% if venue == monthlist.venue_this %} selected{% endif %}>{{ venue }}</option>
+			{% endfor %}
+		</select>
+		{% keep_get_params request "monthlist_venue,monthlist_month,monthlist_year" %}
+	</form>
+	
+	<div class="monthlist">
+		<div class="rowheader">
+			{% for e in 0|weekdays:monthlist.weeks.0 %}
+			<div class="cell">
+				<span class="dayname">{{ e|date:"l" }}</span>
+			</div>
+			{% endfor %}
+		</div>
+
+		{% for week in monthlist.weeks %}
+		<div class="row-col">
+			{% for date in monthlist.list|booking_weeklist:week %}
+			{% if date.date|date:"m" != monthlist.weeks.1|date:"m" %}
+			<span class="cell deactivated"></span>
+			{% elif date.accepted %}
+			<a class="cell accepted" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% elif date.offer_accepted %}
+			<a class="cell offer_accepted" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% elif date.offer_sent %}
+			<a class="cell offer_sent" href="{% url 'booking:detail' date.booking.id %}" title="View booking">
+				{{ date.booking.band }}
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% elif date.pending %}
+			{% if date.list|length_is:"1" %}
+			{% with booking=date.list|first %}
+			<a class="cell pending" href="{% url 'booking:detail' booking.id %}" title="View booking">
+				{{ booking.band }}
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% endwith %}
+			{% else %}
+			<a class="cell pending" href="{% url 'booking:list' %}?date={{ date.date|date:'Y-m-d' }}&venue={{ monthlist.venue_this.slug }}" title="View bookings">
+				Multiple bookings
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% endif %}
+			{% else %}
+			<a class="cell" href="{% url 'booking:create' %}?date={{ date.date|date:'Y-m-d' }}&venue={{ monthlist.venue_this.slug }}" title="Create booking">
+				<span class="date-cal">{{ date.date|date:"d" }}</span>
+			</a>
+			{% endif %}
+			{% endfor %}
+		</div>
+{% endfor %}
+	</div>
+</div>
+{% endif %}
+
+<div class="table table-style">
+	<div class="rowheader">
+		<div class="cell">Band</div>
+		<div class="cell">Venue</div>
+		<div class="cell">Date</div>
+		<div class="cell">Band fee</div>
+		<div class="cell">State</div>
+	</div>
+
+	{% for booking in booking_list %}
+	<a href="{% url 'booking:detail' booking.id %}" class="row">
+		<div class="cell" data-col="Band">{{ booking.band.name }}</div>
+		<div class="cell" data-col="Venue">{{ booking.venue.name }}</div>
+		<div class="cell" data-col="Date">{{ booking.begin|date:"d M Y" }}</div>
+		<div class="cell" data-col="Band fee">{{ booking.band_fee }}kr</div>
+		<div class="cell" data-col="State">{{ booking.get_state_display }}</div>
+	</a>
+	{% endfor %}
+</div>
+{% endblock %}
